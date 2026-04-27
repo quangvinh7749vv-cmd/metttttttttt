@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Blacksite Command Nexus</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+    background: radial-gradient(circle at center, #03110a 0%, #010101 70%, #000000 100%);
+    color:#00ff99;
+    font-family:monospace;
+    overflow:hidden;
+}
+
+canvas{
+    position:fixed;
+    inset:0;
+    z-index:1;
+}
+
+.scanlines{
+    position:fixed;
+    inset:0;
+    z-index:2;
+    pointer-events:none;
+    background:repeating-linear-gradient(
+        to bottom,
+        rgba(255,255,255,0.02) 0px,
+        rgba(255,255,255,0.02) 1px,
+        transparent 2px,
+        transparent 4px
+    );
+}
+
+#terminal{
+    position:absolute;
+    top:30px;
+    left:30px;
+    width:72%;
+    height:86vh;
+    z-index:3;
+    padding:20px;
+    border:1px solid rgba(0,255,150,0.38); box-shadow: 0 0 24px rgba(0,255,150,0.08), inset 0 0 18px rgba(0,255,150,0.04);
+    background:rgba(0,0,0,0.42);
+    backdrop-filter:blur(6px);
+    overflow:hidden;
+    font-size:13px; letter-spacing: 0.2px;
+    line-height:1.45;
+}
+
+#sidePanel{
+    position:absolute;
+    right:30px;
+    top:30px;
+    width:30%;
+    height:86vh;
+    z-index:3;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+}
+
+.card{
+    flex:1;
+    border:1px solid rgba(0,255,150,0.38); box-shadow: 0 0 24px rgba(0,255,150,0.08), inset 0 0 18px rgba(0,255,150,0.04);
+    background:rgba(0,0,0,0.40);
+    padding:16px;
+    backdrop-filter:blur(6px);
+}
+
+.bar{
+    height:14px;
+    border:1px solid rgba(0,255,150,0.38); box-shadow: 0 0 24px rgba(0,255,150,0.08), inset 0 0 18px rgba(0,255,150,0.04);
+    margin:8px 0 14px;
+    overflow:hidden;
+}
+
+.fill{
+    height:100%;
+    width:0%;
+    background:#00ff99;
+}
+
+.red{color:#ff3355}
+.yellow{color:#ffee00}
+.blue{color:#00d9ff}
+.success{color:#00ff99}
+@keyframes blink {
+    0% { opacity: 1; }
+    50% { opacity: 0; }
+    100% { opacity: 1; }
+}
+</style>
+</head>
+<body>
+
+<canvas id="matrix"></canvas>
+<div class="scanlines"></div>
+
+<div id="terminal"></div>
+
+<div id="sidePanel">
+    <div class="card">
+        <div>[ MESSAGE BROADCAST SIMULATOR ]</div><br>
+        <div>Queue Initialization</div>
+        <div class="bar"><div class="fill" id="f1"></div></div>
+
+        <div>Delivery Pipeline</div>
+        <div class="bar"><div class="fill" id="f2"></div></div>
+
+        <div>Broadcast Completion</div>
+        <div class="bar"><div class="fill" id="f3"></div></div>
+    </div>
+
+    <div class="card" id="stats">
+        <div>[ DELIVERY STATUS MONITOR ]</div><br>
+        <div>CPU LOAD: <span id="cpu">0%</span></div><br>
+        <div>MEMORY: <span id="ram">0%</span></div><br>
+        <div>NETWORK: <span id="net">0 MB/s</span></div><br>
+        <div>ACTIVE RECIPIENTS: <span id="nodes">0</span></div>
+    </div>
+
+    <div class="card" id="alertBox">
+        <div>[ MESSAGE DISPATCH STATUS ]</div><br>
+        <div id="warning">Preparing outbound message queue...</div>
+    </div>
+</div>
+
+<script>
+const canvas=document.getElementById('matrix');
+const ctx=canvas.getContext('2d');
+
+function resize(){
+    canvas.width=window.innerWidth;
+    canvas.height=window.innerHeight;
+}
+resize();
+window.addEventListener('resize',resize);
+
+const chars='01ABCDEFGHIJKLMNOPQRSTUVWXYZ#$%&@';
+const size=16;
+let cols=Math.floor(window.innerWidth/size);
+let drops=Array(cols).fill(1);
+
+function rain(){
+    ctx.fillStyle='rgba(0,0,0,0.05)';
+    ctx.fillRect(0,0,canvas.width,canvas.height);
+    ctx.fillStyle='#00ff99';
+    ctx.font=size+'px monospace';
+
+    for(let i=0;i<drops.length;i++){
+        const text=chars[Math.floor(Math.random()*chars.length)];
+        ctx.fillText(text,i*size,drops[i]*size);
+        if(drops[i]*size>canvas.height&&Math.random()>0.975) drops[i]=0;
+        drops[i]++;
+    }
+}
+
+const terminal=document.getElementById('terminal');
+const warnings=[
+    'Dispatch queue synchronized',
+    'Bulk delivery route prepared',
+    'Recipient batches verified',
+    'Outbound sequence stabilized',
+    'Queue priority elevated',
+    'Broadcast simulation active',
+    'Orbital surveillance rerouted',
+    'Quantum relay synchronized',
+    'Remote tunnel stabilized',
+    'Shadow node injected',
+    'Signal interception complete',
+    'Secure uplink established'
+];
+
+const logs=[
+    '[QUEUE] Batch delivery initialized',
+    '[SEND] Processing recipient list',
+    '[STATUS] Message route confirmed',
+    '[DISPATCH] Delivery pipeline active',
+    '[SYNC] Broadcast simulation running',
+    '[BLACKSITE] Secure channel authenticated',
+    '[OMEGA] Air-gapped node synchronized',
+    '[SIGMA] Threat vectors neutralized',
+    '[GHOST] Silent relay established',
+    '[ORBIT] Satellite handshake confirmed',
+    '[+] Initializing dark protocol...',
+    '[+] Establishing encrypted relay...',
+    '[*] Proxy chain secured',
+    '[+] Mapping defense perimeter...',
+    '[!] Trace attempt detected',
+    '[+] Silent payload synchronized',
+    '[*] Root certificate verified',
+    '[+] Access escalation complete',
+    '[✓] Visualization override successful'
+];
+
+function typeLine(element, text, speed = 28) {
+    const cursor = document.createElement('span');
+    cursor.textContent = '_';
+    cursor.style.animation = 'blink 0.6s infinite';
+    cursor.style.marginLeft = '2px';
+    element.appendChild(cursor);
+    let i = 0;
+    const writer = setInterval(() => {
+        cursor.insertAdjacentText('beforebegin', text.charAt(i));
+        i++;
+        if (i >= text.length) {
+            cursor.remove();
+            clearInterval(writer);
+        }
+    }, speed);
+}
+
+function addLog(){
+    const line=document.createElement('div');
+    const r=Math.random();
+
+    if(r<0.2) line.className='red';
+    else if(r<0.4) line.className='yellow';
+    else if(r<0.6) line.className='blue';
+    else line.className='success';
+
+    const selectedLog = logs[Math.floor(Math.random()*logs.length)];
+    terminal.appendChild(line);
+    typeLine(line, '> ' + selectedLog, 20);
+
+    if(terminal.children.length>90){
+        terminal.removeChild(terminal.firstChild);
+    }
+}
+
+let a=0,b=0,c=0;
+function updateBars(){
+    a=Math.min(100,a+Math.random()*7);
+    b=Math.min(100,b+Math.random()*5);
+    c=Math.min(100,c+Math.random()*4);
+
+    document.getElementById('f1').style.width=a+'%';
+    document.getElementById('f2').style.width=b+'%';
+    document.getElementById('f3').style.width=c+'%';
+}
+
+function updateStats(){
+    document.getElementById('cpu').textContent=Math.floor(Math.random()*100)+'%';
+    document.getElementById('ram').textContent=Math.floor(Math.random()*100)+'%';
+    document.getElementById('net').textContent=(Math.random()*900).toFixed(1)+' MB/s';
+    document.getElementById('nodes').textContent=Math.floor(Math.random()*9000+1000);
+    document.getElementById('warning').textContent=warnings[Math.floor(Math.random()*warnings.length)];
+}
+
+setInterval(rain,33);
+setInterval(()=>{
+    addLog();
+    updateBars();
+    updateStats();
+},120);
+</script>
+
+<div id="worldMap" style="position:absolute;bottom:20px;left:30px;width:420px;height:220px;z-index:4;border:1px solid rgba(0,255,150,0.35);background:rgba(0,0,0,0.35);backdrop-filter:blur(6px);padding:14px;box-shadow:0 0 20px rgba(0,255,150,0.08);">
+<div style="margin-bottom:10px;">[ GLOBAL NODE TRACKING ]</div>
+<div style="font-size:13px;line-height:1.7;opacity:0.9;">
+NODE-117 :: EUROPE RELAY ACTIVE<br>
+NODE-204 :: ASIA SATLINK VERIFIED<br>
+NODE-331 :: NORTH GRID SYNCHRONIZED<br>
+NODE-509 :: DEEP SIGNAL STABLE<br>
+THREAT LEVEL :: ELEVATED
+</div>
+</div>
+
+<div id="commandBox" style="position:absolute;bottom:20px;right:30px;width:520px;z-index:4;border:1px solid rgba(0,255,150,0.35);background:rgba(0,0,0,0.38);padding:16px;backdrop-filter:blur(6px);box-shadow:0 0 20px rgba(0,255,150,0.08);">
+<div style="margin-bottom:10px;">[ COMMAND CONSOLE ]</div>
+<div id="cmdLine">> awaiting secure operator input...</div>
+</div>
+
+<script>
+const fakeCommands = [
+'> establish orbital relay',
+'> reroute surveillance grid',
+'> synchronize blacksite nodes',
+'> authorize omega clearance',
+'> decrypt archive layer VII',
+'> confirm satellite handshake',
+'> isolate hostile vector'
+];
+
+setInterval(()=>{
+  const cmd=document.getElementById('cmdLine');
+  if(cmd){
+    cmd.textContent=fakeCommands[Math.floor(Math.random()*fakeCommands.length)];
+  }
+},700);
+</script>
+</body>
+</html>
